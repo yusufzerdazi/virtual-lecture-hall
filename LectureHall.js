@@ -22,13 +22,13 @@ var VSHADER_SOURCE =
 
    'void main() {\n' +
    '    gl_Position = u_MvpMatrix * a_Position;\n' +  // Calculate the vertex position in the world coordinate
-   '    v_Position = vec3(u_ModelMatrix * a_Position);\n' +  
+   '    v_Position = vec3(u_ModelMatrix * a_Position);\n' +
    '    v_Normal = normalize(vec3(u_NormalMatrix * a_Normal));\n' +  // Calculate the normal of the object at this specific point
    '    if(u_isTexture){\n' +  // If object is textured
    '        v_TexCoord = a_TexCoord;\n' +  // Set the per fragment texture
    '    }else{\n' +  //Otherwise
    '        v_Color = a_Color;\n' +  // Set it to a solid colour
-   '    }\n' + 
+   '    }\n' +
    '}\n';
 
 // Fragment shader program
@@ -110,6 +110,7 @@ var isDisco=false;
 var fanOn = false;
 var doorOpen = false;
 var doorAngle = 0;
+var controlsShown = true;
 
 //Light variables
 var lightsOn = [true,false,false,false];
@@ -158,7 +159,7 @@ function main() {
     gl.enable(gl.DEPTH_TEST);  // enable the depth test
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);  // Set the type of blending us
     gl.enable(gl.BLEND);  // Enable blending (for transparency)
-    
+
     //////////////////////////////////////////////////
     //Get the storage locations of uniform variables//
     //////////////////////////////////////////////////
@@ -181,7 +182,7 @@ function main() {
     program.lightsOn = gl.getUniformLocation(program, 'lightsOn');  // Lights that are on
 
     //Detect errors
-    if (!program.u_ModelMatrix || !program.u_MvpMatrix || !program.u_NormalMatrix || !program.lightPositions　|| !program.u_AmbientLight  || !program.u_isTexture  || !program.u_Alpha || !program.lightColours || !program.lightsOn) { 
+    if (!program.u_ModelMatrix || !program.u_MvpMatrix || !program.u_NormalMatrix || !program.lightPositions　|| !program.u_AmbientLight  || !program.u_isTexture  || !program.u_Alpha || !program.lightColours || !program.lightsOn) {
         console.log('Failed to get the storage location');
         return;
     }
@@ -220,7 +221,7 @@ function main() {
         if(theta<0){
             theta+=(2*Math.PI);
         }
-    } 
+    }
 
     //Detect mouse clicks
     document.body.onclick = document.body.requestPointerLock ||
@@ -248,19 +249,19 @@ function main() {
 function resize(gl) {
     // Get the canvas from the WebGL context
     var canvas = gl.canvas;
-     
+
     // Lookup the size the browser is displaying the canvas.
     var displayWidth = canvas.clientWidth;
     var displayHeight = canvas.clientHeight;
-     
+
     // Check if the canvas is not the same size.
     if (canvas.width != displayWidth ||
         canvas.height != displayHeight) {
-         
+
         // Make the canvas the same size
         canvas.width = displayWidth;
         canvas.height = displayHeight;
-         
+
         // Set the viewport to match
         gl.viewport(0, 0, canvas.width, canvas.height);
     }
@@ -330,7 +331,7 @@ function updateLights(gl){
     gl.uniform1iv(program.lightsOn, lightsOn); // Set whether the point lights are on
     gl.uniform3fv(program.lightColours, lightColours); // Set the point light colours
     gl.uniform3fv(program.lightPositions, lightPositions); // Set the point light positions
-    
+
 }
 
 //Update an entity
@@ -424,7 +425,7 @@ function setPlayerVelocity(map){
             theta-(2*Math.PI);
         }
 	}
-	
+
 }
 
 //Set the velocity
@@ -530,7 +531,7 @@ function spawnEntity(type){
 		entity.size=5*Math.random()+4;
 		entity.height=entity.size;
 	}
-	
+
 	entities.push(entity);
 }
 
@@ -554,6 +555,9 @@ function toggles(e){
         break;
     case 79: //o
         fanOn=!fanOn;
+        break;
+    case 72:
+        controlsShown ? (document.getElementById("overlay").style.display = "none", controlsShown = !1) : (document.getElementById("overlay").style.display = "block", controlsShown = !0);
         break;
     case 73: //i
         self.noclip=!self.noclip;
@@ -651,7 +655,7 @@ function createSphere(gl){
     s.vertexBuffer = initArrayBufferForLaterUse(gl, new Float32Array(vertices), 3, gl.FLOAT);
     s.normalBuffer = initArrayBufferForLaterUse(gl, new Float32Array(vertices), 3, gl.FLOAT);
     s.indexBuffer = initElementArrayBufferForLaterUse(gl, new Uint8Array(indices), gl.UNSIGNED_BYTE);
-    if (!s.vertexBuffer || !s.normalBuffer || !s.indexBuffer) return null; 
+    if (!s.vertexBuffer || !s.normalBuffer || !s.indexBuffer) return null;
 
     s.num_vertices = indices.length;
     s.drawtype = gl.TRIANGLES;
@@ -735,16 +739,16 @@ function initTextures(gl, path) {
 
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,new Uint8Array([255, 0, 0, 255])); // red
-    
+
     if (!texture) { console.log('Failed to create the texture object'); return false;}
 
     var image = new Image(); // Create the image object
     if (!image) { console.log('Failed to create the image object'); return false;}
-    
+
     image.onload = function(){  // Tell the browser to load an image
         loadTexture(gl, texture, image);  // Register the event handler to be called on loading an image
     };
-    
+
     image.src = path;
     return texture;
 }
@@ -792,7 +796,7 @@ function initElementArrayBufferForLaterUse(gl, data, type) {
 
 //Initialise a buffer
 function initArrayBufferForLaterUse(gl, data, num,type) {
-    var buffer = gl.createBuffer(); 
+    var buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
     buffer.num = num;
@@ -1160,7 +1164,7 @@ function drawObject(gl, shape) {
     gl.uniformMatrix4fv(program.u_ModelMatrix, false, g_modelMatrix.elements);
     gl.uniformMatrix4fv(program.u_MvpMatrix, false, g_mvpMatrix.elements);
     gl.uniformMatrix4fv(program.u_NormalMatrix, false, g_normalMatrix.elements);
-    
+
     if (shape.isTexture) {
         gl.uniform1i(program.u_isTexture, true);
         initAttributeVariable(gl, program.a_TexCoord, shape.texCoordBuffer);
